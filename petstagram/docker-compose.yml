@@ -1,0 +1,52 @@
+services:
+  web:
+    build: .
+    # NOTE: Match the service name used in logs so container output is easier to identify.
+    container_name: petstagram-web
+    restart: always
+    # NOTE: Point Gunicorn at the real Django package; "myproject" was a stale starter placeholder.
+    command: gunicorn petstagram.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+    depends_on:
+      - db
+    environment:
+      # NOTE: Keep Django debug mode configurable without hardcoding it in settings.
+      DEBUG: ${DEBUG:-0}
+      # NOTE: Containers must use the Compose service name, not 127.0.0.1, to reach Postgres.
+      DB_HOST: db
+      # NOTE: Explicitly set the container-side Postgres port expected by Django.
+      DB_PORT: 5432
+
+  db:
+    image: postgres:16
+    # NOTE: Keep DB container naming consistent with the actual project.
+    container_name: petstagram-db
+    restart: always
+    environment:
+      # NOTE: Default to the project database name if .env does not provide one.
+      POSTGRES_DB: ${DB_NAME:-petstagram}
+      # NOTE: Default to the project database user if .env does not provide one.
+      POSTGRES_USER: ${DB_USER:-postgres}
+      # NOTE: Default to a local dev password so the stack can still boot without extra setup.
+      POSTGRES_PASSWORD: ${DB_PASS:-admin}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  nginx:
+    image: nginx:latest
+    # NOTE: Keep nginx container naming consistent with the actual project.
+    container_name: petstagram-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/app/static
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  static_volume:

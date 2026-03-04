@@ -26,18 +26,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# NOTE: Read DEBUG from env so container and local runs can toggle it without code edits.
+DEBUG = os.getenv('DEBUG', '0') == '1'
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "gator-causal-monthly.ngrok-free.app",
-]
+# NOTE: Drop empty values so a missing env var does not produce an invalid host entry.
+ALLOWED_HOSTS = [host for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host]
 
+# NOTE: Drop empty values so a missing env var does not produce an invalid trusted origin entry.
 CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1",
-    "http://localhost",
-    "https://gator-causal-monthly.ngrok-free.app",
+    origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin
 ]
 
 
@@ -144,6 +141,7 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
